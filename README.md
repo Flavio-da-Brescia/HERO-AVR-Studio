@@ -1,6 +1,6 @@
 # HERO AVR Studio
 
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg) ![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%20x64-blue.svg) ![Version: 2.0.0](https://img.shields.io/badge/Version-2.0.0-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg) ![Platform: Windows x64](https://img.shields.io/badge/Platform-Windows%20x64-blue.svg) ![Version: 2.0.1](https://img.shields.io/badge/Version-2.0.1-blue.svg)
 
 **From an idea to tested hardware — with AI as your engineering partner.**
 
@@ -48,7 +48,7 @@ The station tracks processed, passed and failed attempts, yield and batch progre
 
 ## Supported target
 
-Current release: **2.0.0**. Windows x64, ATmega328P, external 8 MHz clock, 3.3 V, STK500v1 serial bootloader at 57600 baud. Application flash limit: 30,720 bytes; SRAM: 2,048 bytes. Additional board support is not yet implemented.
+Current release: **2.0.1**. Windows x64, ATmega328P, external 8 MHz clock, 3.3 V, STK500v1 serial bootloader at 57600 baud. Application flash limit: 30,720 bytes; SRAM: 2,048 bytes. Additional board support is not yet implemented.
 
 The application has passed automated compiler regression tests and physical UART/diagnostic-gated production tests. Independent clean-PC offline validation, physical ISP and calibrated electrical/radio qualification remain incomplete.
 
@@ -74,4 +74,13 @@ For development, create the expected local working directories and dependencies,
 
 ## License
 
-HERO-authored application source, documentation and examples in this repository are released under the [MIT License](LICENSE). Third-party dependencies retain their respective licenses. Their binaries and source distributions are excluded from this repository; the MIT license does not relicense them.
+HERO-authored application source, documentation and examples in this repository are released under the [MIT License](LICENSE). Third-party dependencies retain their respective licenses. External toolchain and runtime distributions are excluded; the ArduinoISP example retains its separate BSD notice in licenses/THIRD_PARTY.md. The MIT license does not relicense third-party code.
+
+## Windows online installer
+
+Run HERO_AVR_Studio_Setup.exe from the GitHub release assets. Select an installation folder and click Install. The installer obtains pinned, hash-verified AVR tools, AVR core and .NET runtime from their upstream publishers, verifies the local compiler and application, and creates a desktop shortcut. No administrator access, Arduino IDE or Arduino CLI is needed. Internet is required for setup, not normal firmware development. The optional SX1262 library is not included; obtain it separately under its applicable terms. USB driver installation may be required. The installer is unsigned.
+
+
+## Version 2.0.1
+The application uses explicit process-scoped PowerShell execution settings for its trusted bundled backend scripts. No permanent Windows execution policy is changed; enforced organizational policies still take precedence. Invoke agent.cmd from CMD or another agent launcher with the same module/action arguments as agent.ps1.
+Projects now open into a persistent, hideable source tree with independent diagnostic build and release history. Drag the shared divider to resize debug and serial output. The ISP tutorial supports USBasp and separate ATmega328P Arduino helpers (Uno R3, Nano new/old bootloader, Pro Mini 3.3 V 8 MHz). Confirm the separate helper and target wiring before any writes. Read-only detection is cancellable and times out after ten seconds of AVRDUDE communication; target bootloader programming requires explicit erase consent. Physical ISP qualification remains pending.

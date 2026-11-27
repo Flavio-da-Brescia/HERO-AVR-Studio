@@ -24,9 +24,10 @@ sealed class DiagnosticsDialog : Form {
  Shown+=async(_,_)=>await Guard(RefreshProfiles);FormClosing+=(_,e)=>{if(busy)e.Cancel=true;};
  }
  static string Get(JsonElement j,string k)=>j.TryGetProperty(k,out var v)?v.ToString():"";
+ internal Task<JsonElement> PolicyProbe()=>Call("list");
  async Task<JsonElement> Call(params string[] args){
  var s=new ProcessStartInfo(Path.Combine(Environment.SystemDirectory,@"WindowsPowerShell\v1.0\powershell.exe")){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
- foreach(var a in new[]{"-NoProfile","-NonInteractive","-File",Path.Combine(root,"diagnostics.ps1")}.Concat(args))s.ArgumentList.Add(a);
+ foreach(var a in new[]{"-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",Path.Combine(root,"diagnostics.ps1")}.Concat(args))s.ArgumentList.Add(a);
  using var p=Process.Start(s)??throw new Exception("Cannot launch diagnostic runner");var o=p.StandardOutput.ReadToEndAsync();var e=p.StandardError.ReadToEndAsync();await p.WaitForExitAsync();string raw=await o;string err=await e;
  try{using var doc=JsonDocument.Parse(raw);return doc.RootElement.Clone();}catch{throw new Exception(err+" "+raw);}
  }

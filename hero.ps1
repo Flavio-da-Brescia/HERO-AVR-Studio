@@ -4,17 +4,17 @@ $root=$PSScriptRoot
 . (Join-Path $root 'hero-build.ps1')
 $fqbn='arduino:avr:pro:cpu=8MHzatmega328'
 try {
-  if($Action -eq 'help'){ @{actions=@('status','compile -Sketch <path>','selftest','ports','libraries','library-import -Source <path>','upload -Port <COM> -Hex <path> [-Sha256 <hash>]');schema_version=1;version='2.0.0';board=$fqbn}|ConvertTo-Json;exit 0 }
+  if($Action -eq 'help'){ @{actions=@('status','compile -Sketch <path>','selftest','ports','libraries','library-import -Source <path>','upload -Port <COM> -Hex <path> [-Sha256 <hash>]');schema_version=1;version='2.0.1';board=$fqbn}|ConvertTo-Json;exit 0 }
   if($Action -eq 'status'){
     $v='HERO Build Engine / AVR-GCC 7.3.0'
-    @{schema_version=1;version='2.0.0';board=$fqbn;root=$root;engine=$v;cli=$null;board_profile='hero-atmega328p-8mhz';core_present=(Test-Path "$root\compatibility\arduino-avr\platform.txt")}|ConvertTo-Json;exit 0
+    @{schema_version=1;version='2.0.1';board=$fqbn;root=$root;engine=$v;cli=$null;board_profile='hero-atmega328p-8mhz';core_present=(Test-Path "$root\compatibility\arduino-avr\platform.txt")}|ConvertTo-Json;exit 0
   }
-  if($Action -eq 'libraries'){ & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -File (Join-Path $root 'libraries.ps1') list; exit $LASTEXITCODE }
-  if($Action -eq 'library-import'){ if(!$Source){throw 'Specify -Source'}; & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -File (Join-Path $root 'libraries.ps1') import -Source $Source; exit $LASTEXITCODE }
+  if($Action -eq 'libraries'){ & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'libraries.ps1') list; exit $LASTEXITCODE }
+  if($Action -eq 'library-import'){ if(!$Source){throw 'Specify -Source'}; & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'libraries.ps1') import -Source $Source; exit $LASTEXITCODE }
   if($Action -eq 'ports'){ @{schema_version=1;success=$true;ports=@([System.IO.Ports.SerialPort]::GetPortNames()|Sort-Object)}|ConvertTo-Json;exit 0 }
   if($Action -eq 'upload'){
     if(!$Port -or !$Hex){throw 'Specify -Port and -Hex'}
-    if($Sha256){ & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -File (Join-Path $root 'upload.ps1') -Port $Port -Hex $Hex -Sha256 $Sha256 }else{ & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -File (Join-Path $root 'upload.ps1') -Port $Port -Hex $Hex }
+    if($Sha256){ & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'upload.ps1') -Port $Port -Hex $Hex -Sha256 $Sha256 }else{ & (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'upload.ps1') -Port $Port -Hex $Hex }
     exit $LASTEXITCODE
   }
   if($Action -eq 'selftest'){$Sketch=Join-Path $root 'examples\BlinkA0'}

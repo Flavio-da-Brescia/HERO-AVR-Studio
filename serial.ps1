@@ -16,7 +16,7 @@ try{
   if($Baud -lt 300 -or $Baud -gt 2000000){throw 'Invalid baud'}
   $id=[guid]::NewGuid().ToString('N');$dir=Join-Path $logs $id
   New-Item -ItemType Directory -Path (Join-Path $dir 'queue') -Force|Out-Null
-  $p=Start-Process (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -ArgumentList @('-NoProfile','-NonInteractive','-File',('"{0}"' -f (Join-Path $root 'serial-worker.ps1')),'-Port',$Port,'-Baud',$Baud,'-Session',('"{0}"' -f $dir)) -WindowStyle Hidden -PassThru
+  $p=Start-Process (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -ArgumentList @('-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',('"{0}"' -f (Join-Path $root 'serial-worker.ps1')),'-Port',$Port,'-Baud',$Baud,'-Session',('"{0}"' -f $dir)) -WindowStyle Hidden -PassThru
   @{port=$Port;baud=$Baud;pid=$p.Id;session=$id}|ConvertTo-Json|Set-Content (Join-Path $dir 'session.json')
   for($i=0;$i -lt 50;$i++){ $e=@(Events $dir 10);if(@($e|Where-Object kind -eq 'connected').Count){Reply @{success=$true;session=$id;port=$Port;baud=$Baud;log=(Join-Path $dir 'events.jsonl')};exit 0};if(Test-Path (Join-Path $dir 'done')){throw (($e|Where-Object kind -eq 'error'|Select-Object -Last 1).data)};Start-Sleep -Milliseconds 100 }
   New-Item -ItemType File -Path (Join-Path $dir 'stop') -Force|Out-Null

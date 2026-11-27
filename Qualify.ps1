@@ -19,7 +19,7 @@ function Record($name,$ok,$detail){
  if(!$ok){throw "Qualification failure: $name"}
 }
 function J($script,$arguments){
- $raw=& $ps -NoProfile -NonInteractive -File (Join-Path $root $script) @arguments
+ $raw=& $ps -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root $script) @arguments
  try{$r=$raw|ConvertFrom-Json}catch{throw "Invalid JSON from $script"}
  return $r
 }

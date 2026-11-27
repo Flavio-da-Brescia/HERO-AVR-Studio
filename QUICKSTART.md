@@ -44,3 +44,8 @@ powershell -NoProfile -File .\Build.ps1
 .\Launch.cmd
 ```
 Build.ps1 uses the local dev-sdk, stages a release, runs the compiler integration self-test, then replaces app only after success. Read AGENTS.md before modifying source or scripts.
+
+
+## Version 2.0.1
+The application uses explicit process-scoped PowerShell execution settings for its trusted bundled backend scripts. No permanent Windows execution policy is changed; enforced organizational policies still take precedence. Invoke agent.cmd from CMD or another agent launcher with the same module/action arguments as agent.ps1.
+Projects now open into a persistent, hideable source tree with independent diagnostic build and release history. Drag the shared divider to resize debug and serial output. The ISP tutorial supports USBasp and separate ATmega328P Arduino helpers (Uno R3, Nano new/old bootloader, Pro Mini 3.3 V 8 MHz). Confirm the separate helper and target wiring before any writes. Read-only detection is cancellable and times out after ten seconds of AVRDUDE communication; target bootloader programming requires explicit erase consent. Physical ISP qualification remains pending.

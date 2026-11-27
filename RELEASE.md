@@ -1,4 +1,4 @@
-# HERO AVR Studio 2.0.0 - current release
+# HERO AVR Studio 2.0.1 - current release
 
 Internal operational Windows x64 release. Product name HERO AVR Studio; canonical root C:\HERO_AVR_Studio. The source repository excludes local user projects and evidence. A provisioned local toolchain is required.
 
@@ -15,4 +15,9 @@ Verify ZIP SHA256 sidecar, extract entire media, run Setup.cmd. Install.ps1 stag
 ## Tests and limits
 Regression.ps1 tests compiler/caches; Qualify.ps1 tests known hashes, release lifecycle, protocol and GUI. Reports under qualification/. -RequireOffline requires disconnected non-loopback networks, sampled start/end. Optional -TestPort COM4 explicitly authorizes destructive hardware test and leaves D13 blink. Omit for software-only qualification.
 
-RC1: 15/15 qualification, 7/7 compiler regression, PowerShell PATH independence, 14/14 physical COM4 checks with 258-byte native UART program, DTR reset, 2048/2048 exact binary echo bytes, serial release, hash rejection, verified diagnostic-gated production (15.155 s). Prior installed-package qualification 22/22, 15.481 s physical cycle. Internal 2.0.0 approval is not independent certification. Independent clean-PC/offline, physical ISP, interactive GUI coverage, calibrated analog/LoRa and third-party license clearance still incomplete. No blanket Arduino compatibility guarantee.
+RC1: 15/15 qualification, 7/7 compiler regression, PowerShell PATH independence, 14/14 physical COM4 checks with 258-byte native UART program, DTR reset, 2048/2048 exact binary echo bytes, serial release, hash rejection, verified diagnostic-gated production (15.155 s). Prior installed-package qualification 22/22, 15.481 s physical cycle. Internal 2.0.1 approval is not independent certification. Independent clean-PC/offline, physical ISP, interactive GUI coverage, calibrated analog/LoRa and third-party license clearance still incomplete. No blanket Arduino compatibility guarantee.
+
+
+## Version 2.0.1
+The application uses explicit process-scoped PowerShell execution settings for its trusted bundled backend scripts. No permanent Windows execution policy is changed; enforced organizational policies still take precedence. Invoke agent.cmd from CMD or another agent launcher with the same module/action arguments as agent.ps1.
+Projects now open into a persistent, hideable source tree with independent diagnostic build and release history. Drag the shared divider to resize debug and serial output. The ISP tutorial supports USBasp and separate ATmega328P Arduino helpers (Uno R3, Nano new/old bootloader, Pro Mini 3.3 V 8 MHz). Confirm the separate helper and target wiring before any writes. Read-only detection is cancellable and times out after ten seconds of AVRDUDE communication; target bootloader programming requires explicit erase consent. Physical ISP qualification remains pending.

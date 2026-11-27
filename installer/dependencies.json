@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "packages": [
+    {
+      "name": "avr-gcc",
+      "version": "7.3.0-atmel3.6.1-arduino7",
+      "archive": "gcc.zip",
+      "url": "https://downloads.arduino.cc/tools/avr-gcc-7.3.0-atmel3.6.1-arduino7-i686-w64-mingw32.zip",
+      "algorithm": "SHA256",
+      "hash": "a54f64755fff4cb792a1495e5defdd789902a2a3503982e81b898299cf39800e",
+      "target": "toolchain/avr-gcc",
+      "marker": "bin/avr-gcc.exe"
+    },
+    {
+      "name": "avrdude",
+      "version": "6.3.0-arduino9",
+      "archive": "dude.zip",
+      "url": "https://downloads.arduino.cc/tools/avrdude-6.3.0-arduino9-i686-w64-mingw32.zip",
+      "algorithm": "SHA256",
+      "hash": "f3c5cfa8d0b3b0caee81c5b35fb6acff89c342ef609bf4266734c6266a256d4f",
+      "target": "toolchain/avrdude",
+      "marker": "bin/avrdude.exe"
+    },
+    {
+      "name": "Arduino AVR Core",
+      "version": "1.8.8",
+      "archive": "core.tar.bz2",
+      "url": "https://downloads.arduino.cc/cores/staging/avr-1.8.8.tar.bz2",
+      "algorithm": "SHA256",
+      "hash": "a234c2a43dcd01ce54be665806f183b8e6ec4e966d2e3e0c3358b63023d6390c",
+      "target": "compatibility/arduino-avr",
+      "marker": "platform.txt"
+    },
+    {
+      "name": ".NET Runtime",
+      "version": "10.0.15",
+      "archive": "runtime.zip",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/Runtime/10.0.15/dotnet-runtime-10.0.15-win-x64.zip",
+      "algorithm": "SHA512",
+      "hash": "06f0bedd59ae4ac722ada805a6d6bbf605bcdc790c71f59b7003878072902b5cde5dec8c40c0baa81192660d4748e9d79afdbdcb0c0ea9d6b821d0a044c4c6dd",
+      "target": "runtime",
+      "marker": "dotnet.exe"
+    },
+    {
+      "name": ".NET Desktop Runtime",
+      "version": "10.0.15",
+      "archive": "desktop.zip",
+      "url": "https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/10.0.15/windowsdesktop-runtime-10.0.15-win-x64.zip",
+      "algorithm": "SHA512",
+      "hash": "d82ee2e70f0c1ee7af3a908a944541993782aa80a3fd2b2e02a3fdf27edc81c0ad946f14a3fe34bae295f1b7a23f5d35a466239726e4457bb200de0344e077c4",
+      "target": "runtime",
+      "marker": "shared/Microsoft.WindowsDesktop.App/10.0.15/PresentationFramework.dll"
+    }
+  ]
+}

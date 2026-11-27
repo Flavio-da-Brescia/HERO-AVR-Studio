@@ -1,10 +1,14 @@
 # HERO AVR build engine. Local toolchain only.
 . (Join-Path $PSScriptRoot 'hero-preprocess.ps1')
-function Invoke-HeroBuild([string]$Sketch,[string]$Libraries,[string]$Output){
+function Invoke-HeroBuild([string]$Sketch,[string]$Libraries,[string]$Output,[ValidateSet("target","helper16","helper8")][string]$Profile="target"){
  $root=$PSScriptRoot
  $gcc=Join-Path $root 'toolchain\avr-gcc\bin'
  $avr=Join-Path $root 'compatibility\arduino-avr'
- $core=Join-Path $avr 'cores\arduino';$variant=Join-Path $avr 'variants\eightanaloginputs'
+  $core=Join-Path $avr 'cores\arduino'
+ $variant=Join-Path $avr $(if($Profile -eq 'helper16'){'variants\standard'}else{'variants\eightanaloginputs'})
+ $cpuFlag=if($Profile -eq 'helper16'){'-DF_CPU=16000000UL'}else{'-DF_CPU=8000000UL'}
+ $boardFlag=if($Profile -eq 'helper16'){'-DARDUINO_AVR_UNO'}else{'-DARDUINO_AVR_PRO'}
+ $mhz=if($Profile -eq 'helper16'){16}else{8}
  $work=Join-Path $Output 'work'
  New-Item -ItemType Directory -Force $work|Out-Null
  $messages=New-Object 'System.Collections.Generic.List[string]'
@@ -58,8 +62,8 @@ function Invoke-HeroBuild([string]$Sketch,[string]$Libraries,[string]$Output){
     $tier++
    }
   }
-  $baseFlags=@('-mmcu=atmega328p','-DF_CPU=8000000UL','-Os','-g','-ffunction-sections','-fdata-sections','-flto','-Wall','-Wextra')
-  if($compat){$baseFlags+=@('-DARDUINO=10819','-DARDUINO_AVR_PRO','-DARDUINO_ARCH_AVR')}
+  $baseFlags=@('-mmcu=atmega328p',$cpuFlag,'-Os','-g','-ffunction-sections','-fdata-sections','-flto','-Wall','-Wextra')
+  if($compat){$baseFlags+=@('-DARDUINO=10819',$boardFlag,'-DARDUINO_ARCH_AVR')}
   function LanguageArgs($unit){
    if($unit.Extension -cin '.cpp','.cc','.cxx'){@('-std=gnu++11','-fpermissive','-fno-exceptions','-fno-threadsafe-statics','-Wno-error=narrowing')}
    elseif($unit.Extension -ceq '.S'){@('-x','assembler-with-cpp')}
@@ -203,7 +207,7 @@ function Invoke-HeroBuild([string]$Sketch,[string]$Libraries,[string]$Output){
   if($compat){
    # Only cache the immutable platform core; sketch and library objects always rebuild.
    $savedFlags=$flags
-   $flags=@('-mmcu=atmega328p','-DF_CPU=8000000UL','-Os','-g','-ffunction-sections','-fdata-sections','-flto','-Wall','-Wextra','-DARDUINO=10819','-DARDUINO_AVR_PRO','-DARDUINO_ARCH_AVR',('-I'+$core),('-I'+$variant))
+   $flags=@('-mmcu=atmega328p',$cpuFlag,'-Os','-g','-ffunction-sections','-fdata-sections','-flto','-Wall','-Wextra','-DARDUINO=10819',$boardFlag,'-DARDUINO_ARCH_AVR',('-I'+$core),('-I'+$variant))
    $archive=Join-Path $work 'core.a'
    $cacheRoot=Join-Path $root 'build\hero-core-cache'
    $cacheKey=HashText (@('hero-core-v2',$toolFingerprint,($flags -join '|')) -join $nl)
@@ -249,7 +253,7 @@ function Invoke-HeroBuild([string]$Sketch,[string]$Libraries,[string]$Output){
   $success=$true
  }catch{$messages.Add($_.Exception.Message)}
  $clock.Stop();$elapsed=[Math]::Round($clock.Elapsed.TotalSeconds,3);$log=Join-Path $Output 'compiler.log'
- $logObject=@{success=$success;compiler_out="HERO Build Engine | AVR-GCC | ATmega328P 8 MHz | Core cache hit: $cacheHit | Objects: $($objectStats.hits) reused, $($objectStats.misses) rebuilt, $($objectStats.bypassed) bypassed | $elapsed s";core_cache_hit=$cacheHit;object_cache=$objectStats;object_details=@($objectDetails.ToArray());duration_s=$elapsed;compiler_err=($messages -join $nl);builder_result=@{used_libraries=@($used.ToArray());executable_sections_size=$sections}}
+ $logObject=@{success=$success;compiler_out="HERO Build Engine | AVR-GCC | ATmega328P $mhz MHz | Core cache hit: $cacheHit | Objects: $($objectStats.hits) reused, $($objectStats.misses) rebuilt, $($objectStats.bypassed) bypassed | $elapsed s";core_cache_hit=$cacheHit;object_cache=$objectStats;object_details=@($objectDetails.ToArray());duration_s=$elapsed;compiler_err=($messages -join $nl);builder_result=@{used_libraries=@($used.ToArray());executable_sections_size=$sections}}
  [IO.File]::WriteAllText($log,($logObject|ConvertTo-Json -Depth 8),(New-Object Text.UTF8Encoding($false)))
  [IO.File]::WriteAllText((Join-Path $Output 'stderr.log'),($messages -join $nl),(New-Object Text.UTF8Encoding($false)))
  [pscustomobject]@{success=$success;exit_code=$(if($success){0}else{1});hex_path=$(if($success){$hex}else{''});sha256=$(if($success){(Get-FileHash -LiteralPath $hex).Hash}else{''});compiler_log=$log;used_libraries=@($used.ToArray());memory=$sections;core_cache_hit=$cacheHit;core_cache_key=$cacheKey;object_cache=$objectStats;object_details=@($objectDetails.ToArray());duration_s=$elapsed}

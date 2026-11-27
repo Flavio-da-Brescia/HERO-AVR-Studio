@@ -1,4 +1,4 @@
-param([ValidateSet('detect','backup','verify','write-flash','write-eeprom','bootloader','configure-fuses')][string]$Action='detect',[ValidateSet('usbasp','arduinoisp')][string]$Programmer='usbasp',[string]$Port,[string]$Hex,[string]$Sha256,[string]$Confirm,[switch]$ExternalClockConfirmed)
+param([ValidateSet('detect','backup','verify','write-flash','write-eeprom','bootloader','configure-fuses')][string]$Action='detect',[ValidateSet('usbasp','arduinoisp')][string]$Programmer='usbasp',[string]$Port,[string]$Hex,[string]$Sha256,[string]$Confirm,[switch]$ExternalClockConfirmed,[string]$ProgressPath)
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
 $out=Join-Path $root ('isp-logs\'+[guid]::NewGuid().ToString('N'))
@@ -17,12 +17,18 @@ function Finish($ok,$extra){
  if($ok){exit 0}else{exit 1}
 }
 function Run($label,$opts){
+ if($ProgressPath){[IO.File]::WriteAllText($ProgressPath,("ISP: "+$label+" ..."))}
  $log=Join-Path $out ($label+'.stderr.log')
  $stdout=Join-Path $out ($label+'.stdout.log')
  $argsList=@('-C',('"{0}"' -f $conf),'-p','atmega328p')+$script:connection+$opts
  $p=Start-Process -FilePath $exe -ArgumentList $argsList -RedirectStandardOutput $stdout -RedirectStandardError $log -NoNewWindow -PassThru
  $null=$p.Handle
- if(!$p.WaitForExit(120000)){$p.Kill();$p.WaitForExit();throw "Timeout: $label"}
+  $limit=if($Action -eq 'detect'){10000}else{120000}
+ if(!$p.WaitForExit($limit)){
+  $p.Kill();$p.WaitForExit()
+  $steps.Add([pscustomobject]@{step=$label;exit_code=-1;stderr=$log;stdout=$stdout;timeout_ms=$limit})
+  throw "Timeout: $label ($($limit/1000) seconds). Check programmer firmware, wiring and power."
+ }
  $rc=$p.ExitCode
  $steps.Add([pscustomobject]@{step=$label;exit_code=$rc;stderr=$log;stdout=$stdout})
  if($rc -ne 0){throw "AVRDUDE failed at $label; inspect $log"}

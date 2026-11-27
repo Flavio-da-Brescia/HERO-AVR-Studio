@@ -1,6 +1,6 @@
 # Diagnostic sketches and PCB production
 
-Required behavior for any human or AI agent creating production diagnostics in HERO AVR Studio 2.0.0. production-protocol.ps1 and production.ps1 are the implementation of record.
+Required behavior for any human or AI agent creating production diagnostics in HERO AVR Studio 2.0.1. production-protocol.ps1 and production.ps1 are the implementation of record.
 
 ## Two separate firmware images
 
@@ -118,3 +118,8 @@ Timeout: check serial owner, baud, reset wiring, bootloader, delay and exact mar
 Evidence: production/<batch>/attempts/<sequence>/result.json, diagnostic-serial.txt, upload records. Success requires status=passed, diagnostic_passed=true, production_verified=true. Use production/report for CSV. Preserve linked evidence.
 
 The separate Diagnostics tool uses request/response profiles, not this production protocol; consult diagnostics.ps1 and the profiles. Do not mix the two.
+
+
+## Version 2.0.1
+The application uses explicit process-scoped PowerShell execution settings for its trusted bundled backend scripts. No permanent Windows execution policy is changed; enforced organizational policies still take precedence. Invoke agent.cmd from CMD or another agent launcher with the same module/action arguments as agent.ps1.
+Projects now open into a persistent, hideable source tree with independent diagnostic build and release history. Drag the shared divider to resize debug and serial output. The ISP tutorial supports USBasp and separate ATmega328P Arduino helpers (Uno R3, Nano new/old bootloader, Pro Mini 3.3 V 8 MHz). Confirm the separate helper and target wiring before any writes. Read-only detection is cancellable and times out after ten seconds of AVRDUDE communication; target bootloader programming requires explicit erase consent. Physical ISP qualification remains pending.

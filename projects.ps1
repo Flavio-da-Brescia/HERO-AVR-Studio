@@ -1,4 +1,4 @@
-param([ValidateSet('list','create','history','build','release','restore','rebuild','backup')][string]$Action='list',[string]$Name,[string]$Source,[string]$BuildId,[string]$Version,[string]$Destination,[ValidateSet('Arduino','NativeC','NativeCpp')][string]$Mode)
+param([ValidateSet('list','create','history','build','release','restore','rebuild','backup')][string]$Action='list',[string]$Name,[string]$Source,[string]$BuildId,[string]$Version,[string]$Destination,[string]$Diagnostic,[ValidateSet('Arduino','NativeC','NativeCpp')][string]$Mode)
 $ErrorActionPreference='Stop'
 $root=$PSScriptRoot
 . (Join-Path $root 'hero-build.ps1')
@@ -39,6 +39,7 @@ try{
  $p=Join-Path $projects $Name
  $manifest=Join-Path $p 'project.json'
  $src=Join-Path $p "src\$Name"
+ if($Diagnostic -and $Action -in 'create','list','backup'){throw 'Diagnostic is supported for history, build, release, rebuild and restore'}
  if($Action -eq 'create'){
   if(Test-Path -LiteralPath $p){throw 'Project already exists'}
   if(!$Mode){
@@ -78,9 +79,23 @@ try{
  }
  if(!(Test-Path -LiteralPath $manifest)){throw 'Project does not exist'}
  $m=ReadJson $manifest
+ $sourceName=$Name
+ $buildRoot=Join-Path $p 'builds'
+ $releaseRoot=Join-Path $p 'releases'
+ $entry=Split-Path $m.sketch -Leaf
+ if($Diagnostic){
+  ValidName $Diagnostic
+  $sourceName=$Diagnostic
+  $src=Join-Path $p "diagnostic-src\$Diagnostic"
+  $entry="$Diagnostic.ino"
+  if(!(Test-Path -LiteralPath (Join-Path $src $entry) -PathType Leaf)){throw 'Diagnostic source not found'}
+  $buildRoot=Join-Path $p "diagnostic-builds\$Diagnostic"
+  $releaseRoot=Join-Path $p "diagnostic-releases\$Diagnostic"
+  New-Item -ItemType Directory -Force $buildRoot,$releaseRoot|Out-Null
+ }
  if($Action -eq 'history'){
-  $builds=@(Get-ChildItem "$p\builds" -Directory|Where-Object{Test-Path (Join-Path $_.FullName 'build.json')}|ForEach-Object{ReadJson (Join-Path $_.FullName 'build.json')})
-  $releases=@(Get-ChildItem "$p\releases" -Directory|Where-Object{Test-Path (Join-Path $_.FullName 'release.json')}|ForEach-Object{ReadJson (Join-Path $_.FullName 'release.json')})
+  $builds=@(Get-ChildItem -LiteralPath $buildRoot -Directory|Where-Object{Test-Path (Join-Path $_.FullName 'build.json')}|ForEach-Object{ReadJson (Join-Path $_.FullName 'build.json')})
+  $releases=@(Get-ChildItem -LiteralPath $releaseRoot -Directory|Where-Object{Test-Path (Join-Path $_.FullName 'release.json')}|ForEach-Object{ReadJson (Join-Path $_.FullName 'release.json')})
   Reply @{success=$true;project=$m;builds=@($builds|Sort-Object created -Descending);releases=@($releases|Sort-Object created -Descending)};exit 0
  }
  if($Action -eq 'backup'){
@@ -88,55 +103,55 @@ try{
   Reply @{success=$true;backup=$target};exit 0
  }
  if($Action -eq 'build'){
-  $id=[guid]::NewGuid().ToString('N');$b=Join-Path $p "builds\$id"
+  $id=[guid]::NewGuid().ToString('N');$b=Join-Path $buildRoot $id
   New-Item -ItemType Directory -Force "$b\src","$b\output"|Out-Null
-  CopyTree $src "$b\src\$Name"
+  CopyTree $src "$b\src\$sourceName"
   CopyTree (Join-Path $root 'workspace\libraries') "$b\libraries"
   $sourceHashes=@(TreeHashes "$b\src");$libraryHashes=@(TreeHashes "$b\libraries")
   $tools=@(Toolchain)
-  $result=BuildSnapshot "$b\src\$Name" "$b\libraries" "$b\output"
+  $result=BuildSnapshot "$b\src\$sourceName" "$b\libraries" "$b\output"
   $record=[ordered]@{schema_version=1;id=$id;project=$Name;created=[DateTimeOffset]::Now.ToString('o');board=$m.board;source_hashes=$sourceHashes;library_hashes=$libraryHashes;toolchain=$tools;result=$result}
-  WriteJson "$b\build.json" $record
-  $m.updated=[DateTimeOffset]::Now.ToString('o');$m.latest_build=$id;WriteJson $manifest $m
+  if($Diagnostic){$record.diagnostic=$Diagnostic};WriteJson "$b\build.json" $record
+  $m.updated=[DateTimeOffset]::Now.ToString('o');if(!$Diagnostic){$m.latest_build=$id};WriteJson $manifest $m
   Reply @{success=$result.success;build=$record};if($result.success){exit 0}else{exit 1}
  }
  if($Action -eq 'release'){
   ValidVersion $Version
   if($BuildId -notmatch '^[a-f0-9]{32}$'){throw 'Specify successful build ID'}
-  $b=Join-Path $p "builds\$BuildId";$record=ReadJson "$b\build.json"
+  $b=Join-Path $buildRoot $BuildId;$record=ReadJson "$b\build.json"
   if(!$record.result.success){throw 'Cannot release failed build'}
   VerifyTree "$b\src" $record.source_hashes;VerifyTree "$b\libraries" $record.library_hashes
   if((Get-FileHash -LiteralPath $record.result.hex_path).Hash -ne $record.result.sha256){throw 'Firmware checksum mismatch'}
-  $rel=Join-Path $p "releases\$Version";if(Test-Path -LiteralPath $rel){throw 'Version already exists; immutable release'}
-  $stage=Join-Path $p ('releases\.new-'+[guid]::NewGuid().ToString('N'))
+  $rel=Join-Path $releaseRoot $Version;if(Test-Path -LiteralPath $rel){throw 'Version already exists; immutable release'}
+  $stage=Join-Path $releaseRoot ('.new-'+[guid]::NewGuid().ToString('N'))
   try{
    New-Item -ItemType Directory -Force "$stage\firmware"|Out-Null
    CopyTree "$b\src" "$stage\src";CopyTree "$b\libraries" "$stage\libraries"
    foreach($f in Get-ChildItem "$b\output" -File|Where-Object {$_.Extension -in '.hex','.elf','.eep','.log'}){Copy-Item -LiteralPath $f.FullName "$stage\firmware"}
    Copy-Item "$b\build.json" "$stage\build.json"
    $r=[ordered]@{schema_version=1;project=$Name;version=$Version;build_id=$BuildId;created=[DateTimeOffset]::Now.ToString('o');hex="firmware/"+(Split-Path $record.result.hex_path -Leaf);sha256=$record.result.sha256;board=$record.board}
-   WriteJson "$stage\release.json" $r;Move-Item -LiteralPath $stage -Destination $rel
+   if($Diagnostic){$r.diagnostic=$Diagnostic};WriteJson "$stage\release.json" $r;Move-Item -LiteralPath $stage -Destination $rel
   }finally{if(Test-Path -LiteralPath $stage){Remove-Item -LiteralPath $stage -Recurse -Force}}
-  $m.latest_release=$Version;$m.updated=[DateTimeOffset]::Now.ToString('o');WriteJson $manifest $m
+  if(!$Diagnostic){$m.latest_release=$Version};$m.updated=[DateTimeOffset]::Now.ToString('o');WriteJson $manifest $m
   Reply @{success=$true;release=$r;hex_path=(Join-Path $rel $r.hex)};exit 0
  }
  ValidVersion $Version
- $rel=Join-Path $p "releases\$Version";$r=ReadJson "$rel\release.json";$record=ReadJson "$rel\build.json"
+ $rel=Join-Path $releaseRoot $Version;$r=ReadJson "$rel\release.json";$record=ReadJson "$rel\build.json"
  VerifyTree "$rel\src" $record.source_hashes;VerifyTree "$rel\libraries" $record.library_hashes
  if((Get-FileHash -LiteralPath (Join-Path $rel $r.hex)).Hash -ne $r.sha256){throw 'Release firmware integrity mismatch'}
  if($Action -eq 'restore'){
   if(!$Destination){throw 'Specify new destination folder (existing folders never overwritten)'}
   $target=[IO.Path]::GetFullPath($Destination)
   if($target.StartsWith($p+'\',[StringComparison]::OrdinalIgnoreCase)){throw 'Restore outside managed project directory'}
-  if((Split-Path $target -Leaf) -ne $Name){throw "Restore directory must be named $Name"}
-  CopyTree "$rel\src\$Name" $target
-  Reply @{success=$true;sketch_path=(Join-Path $target (Split-Path $m.sketch -Leaf));firmware=(Join-Path $rel $r.hex);sha256=$r.sha256};exit 0
+  if((Split-Path $target -Leaf) -ne $sourceName){throw "Restore directory must be named $sourceName"}
+  CopyTree "$rel\src\$sourceName" $target
+  Reply @{success=$true;sketch_path=(Join-Path $target $entry);firmware=(Join-Path $rel $r.hex);sha256=$r.sha256};exit 0
  }
  if($Action -eq 'rebuild'){
   foreach($t in $record.toolchain){if((Get-FileHash -LiteralPath (Join-Path $root $t.path)).Hash -ne $t.sha256){throw "Toolchain fingerprint changed: $($t.path)"}}
-  $id=[guid]::NewGuid().ToString('N');$out=Join-Path $p "builds\$id\output"
+  $id=[guid]::NewGuid().ToString('N');$out=Join-Path $buildRoot "$id\output"
   New-Item -ItemType Directory -Force $out|Out-Null
-  $prior=$env:HERO_NO_CACHE;try{$env:HERO_NO_CACHE='1';$result=BuildSnapshot "$rel\src\$Name" "$rel\libraries" $out}finally{$env:HERO_NO_CACHE=$prior}
+  $prior=$env:HERO_NO_CACHE;try{$env:HERO_NO_CACHE='1';$result=BuildSnapshot "$rel\src\$sourceName" "$rel\libraries" $out}finally{$env:HERO_NO_CACHE=$prior}
   $match=$result.success -and $result.sha256 -eq $r.sha256
   $report=@{success=$match;rebuild_id=$id;expected_sha256=$r.sha256;actual_sha256=$result.sha256;result=$result}
   WriteJson (Join-Path (Split-Path $out -Parent) 'rebuild.json') $report

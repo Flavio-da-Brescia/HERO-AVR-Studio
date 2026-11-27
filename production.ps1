@@ -65,7 +65,7 @@ function Progress($phase,$state,$message){
  WriteJson (Join-Path $attempt 'progress.json') ([ordered]@{phase=$phase;message=$message;diagnostics=$(if($null -ne $state){Test-Summary $state}else{$null})})
 }
 function Upload($file,$hash,$label){
- $raw=& (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -File (Join-Path $root 'upload.ps1') -Port $m.port -Hex $file -Sha256 $hash
+ $raw=& (Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe') -NoProfile -NonInteractive -ExecutionPolicy Bypass -File (Join-Path $root 'upload.ps1') -Port $m.port -Hex $file -Sha256 $hash
  $rc=$LASTEXITCODE
  [IO.File]::WriteAllText((Join-Path $attempt ($label+'-upload.json')),($raw -join [Environment]::NewLine))
  $u=($raw -join [Environment]::NewLine)|ConvertFrom-Json

@@ -7,7 +7,7 @@ static class ProductionBackend {
  public static bool Ok(JsonElement j)=>j.TryGetProperty("success",out var v)&&v.ValueKind==JsonValueKind.True;
  public static async Task<JsonElement> Call(string root,params string[] args){
   var pinfo=new ProcessStartInfo(Path.Combine(Environment.SystemDirectory,@"WindowsPowerShell\v1.0\powershell.exe")){UseShellExecute=false,CreateNoWindow=true,RedirectStandardOutput=true,RedirectStandardError=true,WorkingDirectory=root};
-  foreach(var a in new[]{"-NoProfile","-NonInteractive","-File",Path.Combine(root,"production.ps1")}.Concat(args))pinfo.ArgumentList.Add(a);
+  foreach(var a in new[]{"-NoProfile","-NonInteractive","-ExecutionPolicy","Bypass","-File",Path.Combine(root,"production.ps1")}.Concat(args))pinfo.ArgumentList.Add(a);
   using var p=Process.Start(pinfo)??throw new Exception("Cannot launch production engine");var o=p.StandardOutput.ReadToEndAsync();var e=p.StandardError.ReadToEndAsync();await p.WaitForExitAsync();string raw=await o;string err=await e;
   try{using var doc=JsonDocument.Parse(raw);return doc.RootElement.Clone();}catch{throw new Exception(err+" "+raw);}
  }

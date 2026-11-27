@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Windows.Forms;
 
 sealed class ProductionDialog:Form {
- readonly string root;readonly string? preferredPort;
+ readonly string root;readonly string? preferredPort,preferredProject;readonly bool historyOnly;
  readonly string[] headings={"Select project","Verify firmware","Check connection","Prepare batch","Production"};
  readonly Panel[] pages=new Panel[5];readonly Label[] steps=new Label[5];
  readonly TableLayoutPanel frame=new(){Dock=DockStyle.Fill,ColumnCount=1,RowCount=4,Padding=new Padding(16)};
@@ -35,8 +35,8 @@ sealed class ProductionDialog:Form {
  JsonElement pair,locked;string verifiedPort="",activeId="";int step;bool busy,running,pairVerified,readOnly;
  string? activeAttempt;string lastProgress="";
  SplitContainer? split,upper;
- public ProductionDialog(string root,string[] ports,string? preferredPort=null){
-  this.root=root;this.preferredPort=preferredPort;Text="HERO Production Wizard";Width=1170;Height=780;MinimumSize=new Size(900,650);StartPosition=FormStartPosition.CenterParent;WindowState=FormWindowState.Maximized;
+ public ProductionDialog(string root,string[] ports,string? preferredPort=null,string? preferredProject=null,bool historyOnly=false){
+  this.root=root;this.preferredPort=preferredPort;this.preferredProject=preferredProject;this.historyOnly=historyOnly;Text="HERO Production Wizard";Width=1170;Height=780;MinimumSize=new Size(900,650);StartPosition=FormStartPosition.CenterParent;WindowState=FormWindowState.Maximized;
   frame.RowStyles.Add(new RowStyle(SizeType.Absolute,78));frame.RowStyles.Add(new RowStyle(SizeType.Percent,100));frame.RowStyles.Add(new RowStyle(SizeType.Absolute,42));frame.RowStyles.Add(new RowStyle(SizeType.Absolute,52));Controls.Add(frame);
   var strip=new TableLayoutPanel{Dock=DockStyle.Fill,ColumnCount=5,RowCount=1};
   for(int i=0;i<5;i++){strip.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,20));steps[i]=new Label{Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleCenter,Font=new Font("Segoe UI Semibold",11),Margin=new Padding(3),Text=(i+1)+"  "+headings[i]};strip.Controls.Add(steps[i],i,0);}
@@ -53,7 +53,7 @@ sealed class ProductionDialog:Form {
   history.SelectedIndexChanged+=(_,_)=>{if(!running&&history.SelectedItems.Count==1&&history.SelectedItems[0].Tag is JsonElement j)ShowRecord(j);};
   timer.Tick+=(_,_)=>Poll();timer.Start();
   FormClosing+=(_,e)=>{if(busy||running)e.Cancel=true;};
-  Shown+=async(_,_)=>{RefreshPorts(ports,preferredPort);ShowStep(0);await Guard(LoadProjects);};
+  Shown+=async(_,_)=>{RefreshPorts(ports,preferredPort);ShowStep(0);await Guard(LoadProjects);if(historyOnly){await Guard(BrowseHistory);if(step!=4)Close();else next.Text="Close history";}};
  }
  static Label Counter()=>new(){Dock=DockStyle.Fill,TextAlign=ContentAlignment.MiddleCenter,Font=new Font("Segoe UI Semibold",18),Text="0"};
  static string G(JsonElement j,string k)=>j.ValueKind==JsonValueKind.Object?ProductionBackend.Get(j,k):"";
@@ -96,7 +96,7 @@ sealed class ProductionDialog:Form {
   if(busy)return;busy=true;back.Enabled=next.Enabled=false;body.Enabled=false;
   try{await f();}catch(Exception e){Say(e.Message,HeroTheme.Danger);}finally{busy=false;body.Enabled=true;back.Enabled=step>0&&step<4;next.Enabled=true;start.Enabled=!readOnly;}
  }
- async Task LoadProjects(){string old=projectList.SelectedIndex>=0?Project():"";var j=await Call("projects");ProductionBackend.Require(j);projects.Clear();projectList.Items.Clear();foreach(var p in j.GetProperty("projects").EnumerateArray()){projects.Add(p.Clone());projectList.Items.Add(G(p,"name")+(B(p,"configured")?"    |    HEX pair configured":"    |    Configuration required"));}int i=projects.FindIndex(p=>G(p,"name")==old);if(i<0)i=projects.FindIndex(p=>B(p,"configured"));if(projects.Count>0)projectList.SelectedIndex=Math.Max(0,i);ShowProject();}
+ async Task LoadProjects(){string old=projectList.SelectedIndex>=0?Project():preferredProject??"";var j=await Call("projects");ProductionBackend.Require(j);projects.Clear();projectList.Items.Clear();foreach(var p in j.GetProperty("projects").EnumerateArray()){projects.Add(p.Clone());projectList.Items.Add(G(p,"name")+(B(p,"configured")?"    |    HEX pair configured":"    |    Configuration required"));}int i=projects.FindIndex(p=>G(p,"name")==old);if(i<0)i=projects.FindIndex(p=>B(p,"configured"));if(projects.Count>0)projectList.SelectedIndex=Math.Max(0,i);ShowProject();}
  void ShowProject(){if(projectList.SelectedIndex<0){projectInfo.Text="No managed project available. Create one in the Projects window first.";return;}var p=projects[projectList.SelectedIndex];projectInfo.Text=Project()+"\n"+(B(p,"configured")?"Diagnostic and production HEX files are configured.":"This project requires a diagnostic HEX and a production HEX.");projectInfo.ForeColor=B(p,"configured")?HeroTheme.Success:HeroTheme.Warning;}
  async Task LoadPair(){
   pairVerified=false;pair=default;diagInfo.Text="Diagnostic HEX: not configured";prodInfo.Text="Production HEX: not configured";pairInfo.Text="Select both HEX files before continuing.";
@@ -135,7 +135,7 @@ sealed class ProductionDialog:Form {
   var dir=Path.Combine(root,"production",activeId);if(HashFile(Path.Combine(dir,"diagnostic.hex"))!=G(locked,"diagnostic_sha256")||HashFile(Path.Combine(dir,"firmware.hex"))!=G(locked,"sha256"))throw new Exception("Locked batch firmware checksum mismatch.");
  }
  async Task BrowseHistory(){
-  var j=await Call("list");ProductionBackend.Require(j);var rows=j.GetProperty("batches").EnumerateArray().Select(x=>x.Clone()).ToList();if(rows.Count==0){Say("No production batches yet.");return;}
+  var j=await Call("list");ProductionBackend.Require(j);var rows=j.GetProperty("batches").EnumerateArray().Where(x=>!historyOnly||G(x,"project")==preferredProject).Select(x=>x.Clone()).ToList();if(rows.Count==0){if(historyOnly)MessageBox.Show("No production batches yet for "+preferredProject+".","Production records");else Say("No production batches yet.");return;}
   using var dlg=new Form{Text="Production batch history (read-only)",Width=820,Height=450,StartPosition=FormStartPosition.CenterParent};
   var list=new ListBox{Dock=DockStyle.Fill};foreach(var b in rows)list.Items.Add(G(b,"name")+" | "+G(b,"project")+" | "+G(b,"port")+" | "+G(b,"created"));list.SelectedIndex=0;
   var ok=new Button{Text="View history",Dock=DockStyle.Bottom,Height=42,DialogResult=DialogResult.OK};dlg.Controls.Add(list);dlg.Controls.Add(ok);dlg.AcceptButton=ok;HeroTheme.Apply(dlg);
@@ -147,7 +147,7 @@ sealed class ProductionDialog:Form {
   else if(step==1){await LoadPair();if(!pairVerified)throw new Exception("Select and verify both HEX files first.");ShowStep(2);}
   else if(step==2){await CheckPort();ShowStep(3);await LoadBatches();}
   else if(step==3)await OpenStation();
-  else{activeId="";locked=default;readOnly=false;tests.Items.Clear();comments.Clear();history.Items.Clear();verifiedPort="";ShowStep(0);await LoadProjects();}
+  else{if(historyOnly){busy=false;Close();return;}activeId="";locked=default;readOnly=false;tests.Items.Clear();comments.Clear();history.Items.Clear();verifiedPort="";ShowStep(0);await LoadProjects();}
  }
  async Task RefreshStatus(){var j=await Call("status","-Batch",activeId);ProductionBackend.Require(j);locked=j.GetProperty("batch").Clone();var s=j.GetProperty("statistics");stationInfo.Text=G(locked,"project")+" / "+G(locked,"name")+"   |   "+G(locked,"port")+"   |   Operator: "+G(locked,"operator")+(readOnly?"   |   HISTORY":"");
   processed.Text=G(s,"attempts");passed.Text=G(s,"passed");failed.Text=G(s,"failed");yield.Text=G(s,"yield_percent")+"%";passed.ForeColor=HeroTheme.Success;failed.ForeColor=HeroTheme.Danger;

@@ -38,6 +38,6 @@ sealed class CodeEditor : RichTextBox {
 }
 sealed class LineGutter : Control {
  readonly CodeEditor editor;
- public LineGutter(CodeEditor editor){this.editor=editor;Width=48;Dock=DockStyle.Left;BackColor=Color.FromArgb(34,41,52);DoubleBuffered=true;editor.ViewChanged+=Invalidate;}
- protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);if(!editor.IsHandleCreated)return;int first=editor.GetLineFromCharIndex(editor.GetCharIndexFromPosition(new Point(1,1)));int count=editor.GetLineFromCharIndex(editor.TextLength)+1;using var brush=new SolidBrush(Color.FromArgb(137,153,173));using var font=new Font("Consolas",10);for(int i=first;i<count;i++){int index=editor.GetFirstCharIndexFromLine(i);if(index<0)break;int y=editor.GetPositionFromCharIndex(index).Y;if(y>Height)break;e.Graphics.DrawString((i+1).ToString(),font,brush,3,y);}}
+ public LineGutter(CodeEditor editor){this.editor=editor;Width=38;Dock=DockStyle.Left;BackColor=Color.FromArgb(34,41,52);DoubleBuffered=true;editor.ViewChanged+=Invalidate;}
+ protected override void OnPaint(PaintEventArgs e){base.OnPaint(e);if(!editor.IsHandleCreated)return;int first=editor.GetLineFromCharIndex(editor.GetCharIndexFromPosition(new Point(1,1)));int count=editor.GetLineFromCharIndex(editor.TextLength)+1;using var brush=new SolidBrush(Color.FromArgb(137,153,173));using var font=new Font("Consolas",9);for(int i=first;i<count;i++){int index=editor.GetFirstCharIndexFromLine(i);if(index<0)break;int y=editor.GetPositionFromCharIndex(index).Y;if(y>Height)break;e.Graphics.DrawString((i+1).ToString(),font,brush,3,y);}}
 }

@@ -1,6 +1,6 @@
 # HERO AVR Studio — agent/developer handbook
 
-This is the current source of truth. Version 2.0.0; Windows x64, .NET 10 WinForms and Windows PowerShell 5.1. Canonical root: C:\HERO_AVR_Studio. This is the sole supported installation. Start with this document, DIAGNOSTICS.md, QUICKSTART.md and RELEASE.md. Inspect the actual source before editing; the code is authoritative if details differ. No old installation is required.
+This is the current source of truth. Version 2.0.1; Windows x64, .NET 10 WinForms and Windows PowerShell 5.1. Canonical root: C:\HERO_AVR_Studio. This is the sole supported installation. Start with this document, DIAGNOSTICS.md, QUICKSTART.md and RELEASE.md. Inspect the actual source before editing; the code is authoritative if details differ. No old installation is required.
 
 
 ## First five minutes for a new AI agent
@@ -106,7 +106,12 @@ Separate legacy diagnostics module uses profile JSON, token/command response, ex
 ISP detect/backup/verify/write-flash/write-eeprom/bootloader/configure-fuses use actual USBasp or ArduinoISP (not a USB-to-UART adapter). Read isp.ps1 for exact confirmation tokens, and require -ExternalClockConfirmed for external 8 MHz fuse/bootloader changes. Fuse target FF/DA/FD, bootloader lock 0F. Do not set fuses unless physical external clock and programmer confirmed.
 
 ## Current validation
-Version 2.0.0 passed automated and physical UART/production qualification on the development board. Operational records and project details remain local. Independent clean-PC/offline, ISP, calibrated electrical/LoRa and licensing review are pending.
+Version 2.0.1 passed automated and physical UART/production qualification on the development board. Operational records and project details remain local. Independent clean-PC/offline, ISP, calibrated electrical/LoRa and licensing review are pending.
 
 ## Maintenance and paths
 Current app/ is the only live binary. source/ contains editable .cs/.csproj. dev-sdk/ is the local development compiler, not an old studio version. runtime/, toolchain/, compatibility/, boards/, workspace/libraries/, licenses/ are dependencies. Projects, workspace sketches, production and linked evidence are user data. build/ contains transient compile output, uploads/ flash records, serial-logs/ monitor sessions, isp-logs/ ISP evidence, diagnostics/runs/ profile runs, plots/ exports. Keep required referenced evidence; clear only obsolete non-active test data. release.json covers selected immutable installation files, not all dependencies/user data. Installer makes a clean workspace and does not migrate projects. Project manifests use absolute paths in some build metadata. For relocation preserve original metadata and verify hashes before rebasing paths. Never rewrite archived source/library/HEX content. Older toolchain fingerprints may require historical tools that are no longer installed; do not bypass fingerprint checks. Audit records are not a second live installation.
+
+
+## Version 2.0.1
+The application uses explicit process-scoped PowerShell execution settings for its trusted bundled backend scripts. No permanent Windows execution policy is changed; enforced organizational policies still take precedence. Invoke agent.cmd from CMD or another agent launcher with the same module/action arguments as agent.ps1.
+Projects now open into a persistent, hideable source tree with independent diagnostic build and release history. Drag the shared divider to resize debug and serial output. The ISP tutorial supports USBasp and separate ATmega328P Arduino helpers (Uno R3, Nano new/old bootloader, Pro Mini 3.3 V 8 MHz). Confirm the separate helper and target wiring before any writes. Read-only detection is cancellable and times out after ten seconds of AVRDUDE communication; target bootloader programming requires explicit erase consent. Physical ISP qualification remains pending.
