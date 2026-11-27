@@ -1,0 +1,12 @@
+{
+ "id": "hero-atmega328p-8mhz",
+ "legacy_board_id": "arduino:avr:pro:cpu=8MHzatmega328",
+ "mcu": "atmega328p",
+ "clock_hz": 8000000,
+ "application_flash_bytes": 30720,
+ "sram_bytes": 2048,
+ "serial_protocol": "arduino/STK500v1",
+ "serial_upload_baud": 57600,
+ "compatibility_variant": "eightanaloginputs",
+ "bootloader": "compatibility/arduino-avr/bootloaders/atmega/ATmegaBOOT_168_atmega328_pro_8MHz.hex"
+}

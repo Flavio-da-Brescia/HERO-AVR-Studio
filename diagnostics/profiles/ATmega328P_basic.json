@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "name": "ATmega328P basic diagnostics",
+  "baud": 38400,
+  "settle_ms": 2200,
+  "timeout_ms": 2000,
+  "steps": [
+    {
+      "id": "identity",
+      "label": "Firmware identity",
+      "command": "IDENT",
+      "kind": "exact",
+      "expected": "ATmega328P-8MHz",
+      "samples": 1
+    },
+    {
+      "id": "echo",
+      "label": "Serial round trip",
+      "command": "ECHO",
+      "kind": "exact",
+      "expected": "OK",
+      "samples": 5
+    },
+    {
+      "id": "adc3",
+      "label": "A3 ADC valid code",
+      "command": "ADC3",
+      "kind": "range",
+      "min": 0,
+      "max": 1023,
+      "samples": 10,
+      "interval_ms": 100
+    },
+    {
+      "id": "uptime",
+      "label": "Firmware uptime increasing",
+      "command": "UPTIME",
+      "kind": "increasing",
+      "samples": 3,
+      "interval_ms": 150
+    },
+    {
+      "id": "battery",
+      "label": "Calibrated battery voltage",
+      "kind": "fixture",
+      "reason": "Requires known ADC reference, divider and battery voltage measurement"
+    },
+    {
+      "id": "digital",
+      "label": "Digital output physical verification",
+      "kind": "fixture",
+      "reason": "Requires external loopback or measuring fixture"
+    },
+    {
+      "id": "lora",
+      "label": "LoRa packet exchange",
+      "kind": "fixture",
+      "reason": "Requires matching radio diagnostic firmware and a second radio"
+    }
+  ]
+}
