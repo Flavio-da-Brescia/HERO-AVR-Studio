@@ -24,6 +24,11 @@
 !/licenses/
 /licenses/*
 !/licenses/THIRD_PARTY.md
+!/installer/
+!/installer/*.cs
+!/installer/*.ps1
+!/installer/*.json
+!/installer/*.md
 
 **/bin/
 **/obj/
